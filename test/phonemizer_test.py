@@ -1,0 +1,329 @@
+import re
+
+dict_broad = {
+                r"[^ а-яієїІґ́’'\+]": "",
+                r"([бвгґджзптцчлмнрсфкхшщй])́": r"́\1",
+                r"\+": "́",
+                "щ": "шч",
+                "ь": "´",
+                "['’]": "f",
+                "дз": "q",
+                "дж": "s",
+                "я": "jа",
+                "ю": "jу",
+                "є": "jе",
+                "(?<=[дзлнрстцq])j": "´",
+                "(?<=[бвгжкмпфхчшґs])j": "'",
+                "ї": "jі",
+                "й": "j",
+                "(?<=[дзлнрстцq])і": "´і",
+                "f": "",
+                "т´с(?=´а)": "ц´ц",
+                "(?<=с)ц(?=´ц)": "",
+                "(?<=д)[шч](?=с)": "",
+                "ст(?=с´к)": "",
+                "(?<=[сшн])т(?=[чцдс])": "",
+                "тс(?=´к|тв)": "ц",
+                "(?<=с)т(?=н)": "",
+                r"(?:(?<=на|[вп]і)|(?<=[сп]ере))(́?)q": r"\1qз",
+                r"(?:(?<=\sна|\sві)|(?<=пі|^на|^ві)|(?<=\sпере)|(?<=^пере))(́?)s": r"\1sж",
+                r"(?:(?<=\s)|(?<=^))з(?=[сцчш])": r"с",
+                r"(?:(?<=\s)|(?<=^))з(?=[кптфх])": r"с",
+                "п(?=[бдзжгґqs])": "б",
+                "х(?=[бдзжгґqs])": "г",
+                "т(?=´?[бдзжгґqs])": "д",
+                "с(?=´?[бдзжгґqs])": "з",
+                "к(?=[бдзжгґqs])": "ґ",
+                "ш(?=[бдзжгґqs])": "ж",
+                "ц(?=´?[бдзжгґqs])": "q",
+                "ч(?=[бдзжгґqs])": "s",
+                "[дs](?=´?[цзсq])": "q",
+                "[тч](?=´?[цзсq])": "ц",
+                "[дq]´?(?=[чжшs])": "s",
+                "[тц]´?(?=[чжшs])": "ч",
+                "з´?(?=[чжшs])": "ж",
+                "с´?(?=[чжшs])": "ш",
+                "ж(?=[зсцq])": "з",
+                "ш(?=[зсцq])": "с",
+                r"(?:(?<=н´і|д´[оі])|(?<=во|[лд]е|кі))(́?)г(?=[кт])": r"\1х",
+                "(?<=[дтнзсцлq])(?=[дтнзсцлq]´)": "´",
+                "q": "д͡з",
+                "s": "д͡ж", 
+                "І":"і"}
+
+
+dict_narrow_simple = {"д͡з": "q",
+                "д͡ж": "s",
+                "(?<![бвгґжкпфхчшдзлрстцмнqsj'´])в(?!['аоеуіи])": "ў",
+                "ф(?=[бдзжгґqs])": "в",
+                "(?<=[бвгжкмпфхчшґs])і": "'і",
+                r"([бвгґжкпфхчшрмs])\1'": r"\1'\1'",
+                r"рр´": r"р´р´",
+                "q": "д͡з",
+                "s": "д͡ж"}
+
+
+dict_narrow = {"д͡з": "q",
+                "д͡ж": "s",
+                "(?<![бвгґжкпфхчшдзлрстцмнqsj'´])в(?!['аоеуіи])": "ў",
+                "ф(?=[бдзжгґqs])": "в",
+                "j(?![аоеуіи])": "ĭ",
+                "(?<=[бвгжкмпфхчшґs])і": "'і",
+                "(?<=[мн][аеиоу])|(?<=м'[аеіуо])|(?<=н´[аеоуі])": "̃",
+                "(?<=[j´'])(?=[аеоу])": "·",
+                "(?<=[бвгґжкпфхчшдзлрстцмнqsj'´])(?=·?[оу])": "°",
+                r"(?<=[иіаеоу])(?=[мн])": "̃",
+                r"(?:(?<=[аеоу])|(?<=[аеоу]̃))(?=[дзлрстцнq]´|j|[бвгжкмпфхчшґs]')": "·",
+                r"(?<=[иіаеоу])́(?=[мн])": "̃́",
+                r"(?:(?<=[аеоу]́)|(?<=[аеоу]̃́))(?=[дзлрстцнq]´|j|[бвгжкмпфхчшґs]')": "·",
+                r"([бвгґжкпфхчшдзлрстцмнqs]´?)\1(['´]?°?)": r"\1\2:",
+                "q": "д͡з",
+                "s": "д͡ж"}
+
+
+dict_accent = {r"(?<=·е)(̃?)(?=·)": r"\1(і)",
+                r"(е̃?)(?!́|̃́|\(|\))": r"\1(и)",
+                r"(и̃?)(?!́|̃́|\(|\))": r"\1(е)",
+                r"(?<=о)(̃?)(?=[бвгґжкпфхчшдзлрстцмнqsўjĭ͡'´°·:]+[у]̃?́)": r"\1(у)",
+                r"\(и\)(?=(·в'і|м|·j°·у)?(\s|$))": "",
+                r"\(і\)(?=(·в'і|·j°·у)(\s|$))": "",
+                r"\(е\)(?=(х|ĭ|м|ш|т´)?(\s|$))": "",
+                r"(?:(?<=\sе)|(?<=^е))\(и\)": "",
+                r"(?:(?<=\sи)|(?<=^и))\(е\)": ""}
+
+
+dict_ipa = {"д͡з": "ʣ",
+            "д͡ж": "ʤ",
+            "ч": "ʧ",
+            "ц": "ʦ",
+            "л´": "lʲ",
+            "л": "ɫ",
+            "в(?=[оу])": "w",
+            "в": "v",
+            "р": "r",
+            "б": "b",
+            "г": "ɦ",
+            "ґ": "g",
+            "д": "d",
+            "ж": "ʒ",
+            "з": "z",
+            "к": "k",
+            "м": "m",
+            "н": "n",
+            "п": "p",
+            "с": "s",
+            "т": "t",
+            "ф": "f",
+            "х": "x",
+            "ш": "ʃ",
+            "а": "ɑ",
+            "е": "ɛ",
+            "и": "ɪ",
+            "і": "i",
+            "о": "o",
+            "у": "u",
+            "ў": "w",
+            "['´]": "ʲ",
+            r"([ɑɛɪiou])́": r"'\1"}
+
+
+dict_grapheme = {
+            r"\n": " ",
+            r"[^ а-яієїґ'´:ўjĭ͡()]": "",
+            "д͡з": "q",
+            "д͡ж": "s",
+            "[°·̃́]": "",
+            r"(.{1})´:": r"\1\1´",
+            r"(.{1})':": r"\1\1'",
+            r"(.{1}):": r"\1\1",
+            "(?<=[дтнзсцq])´(?=[дтнзсцqл]´)": "",
+            "(?<=л)´(?=л´)": "",
+            "ў": "в",
+            "(?<=[бвгґжкпфхчшдзлрстцмнqs])(?=j[аеуі])": "1",
+            "[jĭ]": "й",
+            "['´]і": "і",
+            "['´й]а": "я",
+            "['´й]у": "ю",
+            "['´й]е": "є",
+            "йі": "ї",
+            "1": "'",
+            "´": "ь",
+            "шч": "щ",
+            "s": "дж",
+            "q": "дз",
+            r"\([еиіу]\)": "",
+            r"((?<=\bна)|(?<=\bякна)|(?<=\bщона)|(?<=\bщоякна))я": "йа",
+            r"((?<=\bна)|(?<=\bякна)|(?<=\bщона)|(?<=\bщоякна))ю": "йу",
+            r"((?<=\bна)|(?<=\bякна)|(?<=\bщона)|(?<=\bщоякна))є": "йе",
+            r"((?<=\bна)|(?<=\bякна)|(?<=\bщона)|(?<=\bщоякна))ї": "йі",
+            r"((?<=ле)|(?<=де)|(?<=ні)|(?<=кі)|(?<=во)|(?<=ді)|(?<=дьо))х(?=[кт])": "г",
+            r"цця\b": "ться",
+            r"(?<=[еиєїюь])сся\b": "шся",
+            r"цся\b": "чся",
+            r"зся\b": "жся",
+            r"сч": "щ",
+            r"\bміз(?=[зсц])": "між",
+            r"(?<!мі)ж(?=[шж][аоуие])": "з",
+            r"шш(?![яюі])": "сш",
+            r"чш": "тш",
+            r"чч(?!ин|[яюі])": "тч",
+            r"цці\b": "чці",
+            r"(?<=[уюї])с(?=ц)": "ш",
+            r"(?<=[юїр])з(?=[цзс])": "ж",
+            r"цц(?!і\b)": "тц",
+            r"цс": "тс",
+            "д[зж](?=[сцзшжчщ])": "д",
+            "д[зж](?=д[зж])": "д",
+            "дзь(?=[сцзшжчщ])": "дь",
+            r"дся\b": "дься",
+            r"нся\b": "нься",
+            "ґ(?=[бдзжг])": "к",
+            r"((?<=ро)|(?<=бе)|(?<=чере))ж(?=дж|[чшщ])": r"з",
+            r"((?<=\bі)|(?<=\bне)|(?<=\bпо)|(?<=\bнапів)|(?<=\b))ж(?=дж|[чшщ])": r"з",
+            r"((?<=\bі)|(?<=\bне)|(?<=\bпо)|(?<=\bнапів)|(?<=\b))[шс](?=[цсчшщ])": r"з",
+            "(?<=дво|рьо)г(?=[бдзжгкт])": "х",
+            "(?<=я)д(?=де)": "т",
+            "(?<=ші)[зс](?=[дснц])": "ст"}
+
+
+
+class Transcriptor:
+    def __init__(self, text):
+        self.text = text
+
+    def transcribe(self, tr_type):
+        broad = self.text.lower()
+        if re.findall("[дзлнрстц]ї", broad):
+            broad = re.sub("і", "І", broad)
+            broad = re.sub("ї", "і", broad)
+
+        for pattern1, subst1 in dict_broad.items():
+            broad = re.sub(pattern1, subst1, broad)
+        
+        narrow = broad
+        for pattern, subst in dict_narrow.items():
+            narrow = re.sub(pattern, subst, narrow)
+        if "́" in narrow:
+            for pattern2, subst2 in dict_accent.items():
+                narrow = re.sub(pattern2, subst2, narrow)
+
+        ipa = broad
+        for pattern, subst in dict_narrow_simple.items():
+            ipa = re.sub(pattern, subst, ipa)
+        for pattern, subst in dict_ipa.items():
+            ipa = re.sub(pattern, subst, ipa)
+
+        if tr_type == "narrow":
+            return narrow
+        elif tr_type == "broad":
+            return broad
+        elif tr_type == "ipa":
+            return ipa
+        else:
+            return broad
+
+
+    def p2g(self):
+        grapheme = self.text.lower()
+        for pattern_p2g, subst_p2g in dict_grapheme.items():
+            grapheme = re.sub(pattern_p2g, subst_p2g, grapheme)
+        return grapheme
+    
+    def transcribe_baseline(self):
+        list_of_rules_broad = []
+        list_of_rules_narrow = []
+        list_of_rules_ipa = []
+        broad = self.text.lower()
+    
+        for pattern1, subst1 in dict_broad.items():
+            if re.findall(pattern1, broad):
+                list_of_rules_broad.append(pattern1)
+            broad = re.sub(pattern1, subst1, broad)
+        
+        narrow = broad
+        for pattern, subst in dict_narrow.items():
+            if re.findall(pattern, narrow):
+                list_of_rules_narrow.append(pattern)
+            narrow = re.sub(pattern, subst, narrow)
+        if "́" in narrow:
+            for pattern2, subst2 in dict_accent.items():
+                narrow = re.sub(pattern2, subst2, narrow)
+
+        ipa = broad
+        for pattern, subst in dict_narrow_simple.items():
+            if re.findall(pattern, ipa):
+                list_of_rules_ipa.append(pattern)
+            ipa = re.sub(pattern, subst, ipa)
+        for pattern, subst in dict_ipa.items():
+            ipa = re.sub(pattern, subst, ipa)
+
+        return [broad, list_of_rules_broad, narrow, list_of_rules_narrow, ipa, list_of_rules_ipa]
+
+    def transcribe_accent(self):
+        list_of_rules_accent = []
+        broad = self.text.lower()
+        for pattern1, subst1 in dict_broad.items():
+            if re.findall(pattern1, broad):
+                list_of_rules_accent.append(pattern1)
+            broad = re.sub(pattern1, subst1, broad)
+        narrow = broad
+        for pattern, subst in dict_narrow.items():
+            if re.findall(pattern, narrow):
+                list_of_rules_accent.append(pattern)
+            narrow = re.sub(pattern, subst, narrow)
+            
+        if "́" in narrow:
+            for pattern2, subst2 in dict_accent.items():
+                if re.findall(pattern2, narrow):
+                    list_of_rules_accent.append(pattern2)
+                narrow = re.sub(pattern2, subst2, narrow)
+
+        return [narrow, list_of_rules_accent]
+
+
+def remove_punctuation(input_punct):
+    import tokenize_uk as tk
+    processed_txt = []
+    input_punct = re.sub("-", "d", input_punct)
+    input_punct = re.sub(r"\+", "\u0301", input_punct)
+    clean_txt = tk.tokenize_words(input_punct)
+    #clean_txt = re.split(r"[,.?!;:–()/«»\"\[\]… ]", input_punct)
+    clean_txt = [re.sub("d", "-", t) for t in clean_txt if not re.match (r"[^а-яієїА-ЯЄЇІҐґ́’'-d]", t)]
+
+    for word in clean_txt:
+        word_to_match = re.sub(r"[а-яіїєґ’']", "", word)
+        if word[:3].isupper() and re.match(r"\b[АЕОИУІЇЮЯЄ]?[БВГҐДЖЗПТЦЧЛМНРСФКХШЩЙ]{2,}[АЕОИУІЇЮЯЄ]?\b", word_to_match):
+            word = re.sub("(?<=[БВГҐДЖЗПТЦЧ])", "е", word)
+            word = re.sub("(?=[ЛМНРСФ])", "е", word)
+            word = re.sub("(?<=[КХШЩ])", "а", word)
+        #elif re.match(r"\b[БВГҐДЖЗПТЦЧЛМНРСФКХШЩЙ]-\d+\b", word):
+            #for letter, spelled in dict_abbreviations.items():
+                #word = re.sub(letter, spelled, word)
+        processed_txt.append(word)
+
+    return " ".join(processed_txt)
+
+
+def split_to_phonemes(input_text):
+    input_text = re.split(" ", input_text)
+    if re.findall("[a-zʣʤʧʦɫɦʒʃɑɛɪʲ]", input_text[0]):
+        split_list = [list(filter(None, re.split(r"('?[ɑɛɪoui]|[a-zʣʤʧʦɫɦʒʃɑɛɪ]ʲ?)", t)))
+                    for t in input_text]
+    else:
+        split_list = [list(filter(None, re.split(r"(д͡[жз]['´]?°?:?|·?[аеоуиі]̃?́?(?:\([еиуі]\))?·?|[а-яіґĭўj]['´]?°?:?)", t)))
+                    for t in input_text]
+    return split_list
+
+def add_stress(input_text):
+    from ukrainian_word_stress import Stressifier
+    stressify = Stressifier(stress_symbol="\u0301", on_ambiguity="first")
+    with_stress = stressify(input_text)
+    return with_stress
+    
+
+
+print(len(dict_broad))
+print(len(dict_narrow))  
+print(len(dict_narrow_simple))  
+print(len(dict_accent))
+print(len(dict_ipa))
