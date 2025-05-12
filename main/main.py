@@ -255,7 +255,7 @@ def remove_punctuation(input_punct):
 
 def split_to_phonemes(input_text):
     input_text = re.split(" ", input_text)
-    if re.findall("[a-zʣʤʧʦɫɦʒʃɑɛɪʲ]", input_text[0]):
+    if not re.findall("[а-яієїґўjĭ]", input_text[0]):
         split_list = [list(filter(None, re.split(r"('?[ɑɛɪoui]|[a-zʣʤʧʦɫɦʒʃɑɛɪ]ʲ?)", t)))
                     for t in input_text]
     else:
